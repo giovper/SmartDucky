@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Smart Ducky</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+        body {
+            background-color: #000;
+            color: cyan;
+            font-family: 'Orbitron', sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3em;
+            text-shadow: 0 0 10px lime;
+            margin-top: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border: 2px solid cyan;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .tab:hover {
+            background: cyan;
+            color: black;
+        }
+
+        .content {
+            display: none;
+            padding: 1rem;
+        }
+
+        .active {
+            display: block;
+        }
+
+        textarea, input {
+            width: 80%;
+            height: 300px;
+            background: black;
+            color: cyan;
+            border: 2px solid cyan;
+            padding: 10px;
+            font-family: monospace;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            background: black;
+            border: 2px solid cyan;
+            color: cyan;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: cyan;
+            color: black;
+        }
+
+        .do_btn {
+            background: rgb(91, 230, 218);
+            color: black;
+            border: 2px solid rgb(91, 230, 218);
+            width: 50px;
+            height: 50px;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .do_btn:hover {
+            background: black;
+            color: rgb(91, 230, 218);
+        }
+
+        #exampleModal {
+            display: none;
+            position: fixed;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 70%;
+            background: #000;
+            border: 2px solid cyan;
+            color: cyan;
+            z-index: 1000;
+            padding: 10px;
+            background-color: #DDDDDD;
+        }
+
+        #exampleList {
+            width: 40%;
+            overflow-y: auto;
+            border-right: 2px solid cyan;
+            text-align: left;
+            padding: 10px;
+        }
+
+        #exampleCode {
+            width: 60%;
+            padding: 10px;
+        }
+
+        .example-item {
+            cursor: pointer;
+            margin-bottom: 10px;
+            padding: 5px;
+            border-bottom: 1px solid cyan;
+        }
+
+        .example-item:hover {
+            background: cyan;
+            color: black;
+        }
+
+        .modal-content {
+            display: flex;
+            height: 100%;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        textarea.code-view {
+            width: 90%;
+            height: 90%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Smart Ducky</h1>
+
+    <div class="tabs">
+        <div class="tab" onclick="openTab('code')">Code</div>
+        <div class="tab" onclick="openTab('ai')">AI</div>
+        <div class="tab" onclick="openTab('live')">Live</div>
+        <div class="tab" onclick="openExamples()">📂 Esempi</div>
+    </div>
+
+    <div id="code" class="content active">
+        <textarea id="codeInput"></textarea><br>
+        <button class="do_btn" onclick="sendMessage('code', document.getElementById('codeInput').value)">➤</button>
+        <button class="do_btn" onclick="sendMessage('interrupt', '')">■</button>
+    </div>
+
+    <div id="ai" class="content">
+        <button onclick="startDictation('ai')">🎙️</button>
+    </div>
+
+    <div id="live" class="content">
+        <input id="liveInput" type="text" placeholder="Enter command..." style="height: 30px;"/>
+        <button class="do_btn" id="doBtnLive" onclick="sendMessage('live', document.getElementById('liveInput').value)">➤</button>
+        <button class="do_btn" onclick="sendMessage('interrupt', '')">■</button>
+    </div>
+
+    <!-- MODAL -->
+    <div id="exampleModal">
+        <div class="close-btn" onclick="closeExamples()">✖</div>
+        <div class="modal-content">
+            <div id="exampleList"></div>
+            <div id="exampleCode">
+                <textarea class="code-view" id="exampleCodeView" readonly></textarea><br>
+                <button onclick="loadExample()">📥 Carica</button>
+                <button onclick="runExample()">▶️ Esegui</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("liveInput")
+            .addEventListener("keyup", function(event) {
+            event.preventDefault();
+            if (event.keyCode === 13) {
+                document.getElementById("doBtnLive").click();
+            }
+        });
+    
+        const exampleFiles = [
+            ["GoToGoogleCom.py", "typeString(\"https://www.google.com\")\nkeyboard.press(Keycode.ENTER)\ndelay(1000)"],
+            ["OpenStart.py", "keyboard.press(Keycode.GUI)\ndelay(500)\nkeyboard.release_all()"]
+        ];
+
+        let selectedCode = "";
+
+        function sendMessage(type, message) {
+            fetch("/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ type, value: message })
+            })
+            .then(response => response.text())
+            .then(data => {
+                console.log("[✓] Risposta server:", data);
+                alert("Risposta server: " + data);
+            })
+            .catch(error => {
+                console.error("[!] Errore invio:", error);
+                alert("Errore durante l'invio.");
+            });
+        }
+
+        function openTab(tabId) {
+            if (tabId === 'ai') {
+                alert("AI is not implemented yet.");
+                return;
+            }
+            document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function openExamples() {
+            document.getElementById("exampleModal").style.display = "block";
+            const list = document.getElementById("exampleList");
+            list.innerHTML = "";
+            exampleFiles.forEach((item, index) => {
+                const div = document.createElement("div");
+                div.className = "example-item";
+                div.innerText = item[0];
+                div.onclick = () => {
+                    document.getElementById("exampleCodeView").value = item[1];
+                    selectedCode = item[1];
+                };
+                list.appendChild(div);
+            });
+        }
+
+        function closeExamples() {
+            document.getElementById("exampleModal").style.display = "none";
+        }
+
+        function loadExample() {
+            document.getElementById("codeInput").value = selectedCode;
+            openTab('code')
+            closeExamples();
+        }
+
+        function runExample() {
+            sendMessage('code', selectedCode);
+            closeExamples();
+        }
+    </script>
+</body>
+</html>

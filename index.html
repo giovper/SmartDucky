@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Smart Ducky</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+        body {
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Orbitron', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            font-size: 2em;
+            text-shadow: 0 0 10px #0f0;
+            margin: 10px 0 0 20px;
+            text-align: left;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0 1rem 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border: 2px solid #0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .tab:hover {
+            background: #0f0;
+            color: black;
+        }
+
+        .content {
+            display: none;
+            padding: 1rem;
+            height: calc(100vh - 150px);
+            box-sizing: border-box;
+        }
+
+        .active {
+            display: block;
+        }
+
+        textarea, input {
+            width: 100%;
+            background: black;
+            color: #0f0;
+            border: 2px solid #0f0;
+            padding: 10px;
+            font-family: monospace;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: calc(100% - 60px);
+            resize: none;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            background: black;
+            border: 2px solid #0f0;
+            color: #0f0;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0f0;
+            color: black;
+        }
+
+        .do_btn {
+            background: #0f0;
+            color: black;
+            border: 2px solid #0f0;
+            width: 50px;
+            height: 50px;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            line-height: 1;
+            padding: 0;
+            position: absolute;
+            top: 70px;
+            right: 20px;
+        }
+
+        .do_btn:hover {
+            background: black;
+            color: #0f0;
+        }
+
+        #exampleModal {
+            display: none;
+            position: fixed;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 70%;
+            background: #000;
+            border: 2px solid #0f0;
+            color: #0f0;
+            z-index: 1000;
+            padding: 10px;
+        }
+
+        #exampleList {
+            width: 40%;
+            overflow-y: auto;
+            border-right: 2px solid #0f0;
+            text-align: left;
+            padding: 10px;
+        }
+
+        #exampleCode {
+            width: 60%;
+            padding: 10px;
+        }
+
+        .example-item {
+            cursor: pointer;
+            margin-bottom: 10px;
+            padding: 5px;
+            border-bottom: 1px solid #0f0;
+        }
+
+        .example-item:hover {
+            background: #0f0;
+            color: black;
+        }
+
+        .modal-content {
+            display: flex;
+            height: 100%;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        textarea.code-view {
+            width: 90%;
+            height: 90%;
+        }
+
+        /* Control Tab Styles */
+        #captureArea {
+            border: 2px solid #0f0;
+            padding: 20px;
+            height: calc(100% - 40px);
+            outline: none;
+            user-select: none;
+            margin: 0 auto;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            cursor: crosshair;
+        }
+
+        #captureArea.locked {
+            border-color: #ff0;
+            box-shadow: 0 0 20px #ff0;
+        }
+
+        #log {
+            white-space: pre-wrap;
+            overflow-y: auto;
+            flex-grow: 1;
+            margin-top: 10px;
+            border: 1px solid #0f0;
+            padding: 10px;
+            background: black;
+        }
+
+        #status {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        #mousePosition {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #0f0;
+            background: black;
+            font-family: monospace;
+        }
+
+        .mouse-locked {
+            color: #ff0 !important;
+        }
+
+        /* Live Tab Center Box */
+        #liveBox {
+            border: 2px solid #0f0;
+            padding: 20px;
+            height: calc(100% - 40px);
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #liveInput {
+            width: calc(100% - 24px);
+            margin-bottom: 10px;
+        }
+
+        .live-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Smart Ducky</h1>
+
+    <div class="tabs">
+        <div class="tab" onclick="openTab('code')">Code</div>
+        <div class="tab" onclick="openTab('examples')">Esempi</div>
+        <div class="tab" onclick="openTab('live')">Live</div>
+        <div class="tab" onclick="openTab('control')">Control</div>
+        <div class="tab" onclick="openTab('ai')">AI</div>
+    </div>
+
+    <div id="code" class="content active">
+        <textarea id="codeInput"></textarea>
+        <button class="do_btn" onclick="sendMessage('code', document.getElementById('codeInput').value)">➤</button>
+        <button class="do_btn" onclick="sendMessage('interrupt', '')" style="right: 80px;">■</button>
+    </div>
+
+    <div id="examples" class="content">
+        <div id="exampleListContainer"></div>
+    </div>
+
+    <div id="live" class="content">
+        <div id="liveBox">
+            <input id="liveInput" type="text" placeholder="Enter command..."/>
+            <div class="live-buttons">
+                <button onclick="sendMessage('live', document.getElementById('liveInput').value)">Esegui</button>
+                <button onclick="sendMessage('interrupt', '')">Stop</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="control" class="content">
+        <div id="captureArea" tabindex="0">
+            <div id="status">
+                Modalità cattura: <span id="focusState">NO</span><br>
+                Mouse lock: <span id="mouseState">NO</span>
+            </div>
+            <div id="mousePosition">
+                Posizione mouse virtuale: X=<span id="mouseX">0</span>, Y=<span id="mouseY">0</span>
+            </div>
+            Clicca qui dentro per iniziare a catturare tastiera e mouse.<br>
+            Clicca di nuovo per attivare il mouse lock (movimento relativo).<br>
+            Premi ESC per uscire dalla modalità cattura.
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <div id="ai" class="content">
+        <button onclick="startDictation('ai')">🎙️</button>
+    </div>
+
+    <!-- MODAL -->
+    <div id="exampleModal">
+        <div class="close-btn" onclick="closeExamples()">✖</div>
+        <div class="modal-content">
+            <div id="exampleList"></div>
+            <div id="exampleCode">
+                <textarea class="code-view" id="exampleCodeView" readonly></textarea><br>
+                <button onclick="loadExample()">📥 Carica</button>
+                <button onclick="runExample()">▶️ Esegui</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let useAlert = false;
+        // Setup live input
+        document.getElementById("liveInput").addEventListener("keyup", function(event) {
+            if (event.keyCode === 13) {
+                sendMessage('live', document.getElementById('liveInput').value);
+            }
+            if (event.ctrlKey && event.key === 'p') {
+                sendMessage('live', document.getElementById('liveInput').value);
+            }
+        });
+
+        const exampleFiles = [
+            ["GoToGoogleCom.py", "typeString(\"https://www.google.com\")\nkeyboard.press(Keycode.ENTER)\ndelay(1000)"],
+            ["OpenStart.py", "keyboard.press(Keycode.GUI)\ndelay(500)\nkeyboard.release_all()"]
+        ];
+
+        let selectedCode = "";
+
+        function populateExamples() {
+            const container = document.getElementById("exampleListContainer");
+            container.innerHTML = "";
+            exampleFiles.forEach((item, index) => {
+                const div = document.createElement("div");
+                div.className = "example-item";
+                div.innerText = item[0];
+                div.onclick = () => {
+                    document.getElementById("exampleCodeView").value = item[1];
+                    selectedCode = item[1];
+                    document.getElementById("exampleModal").style.display = "block";
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function sendMessage(type, message) {
+            fetch("/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ type, value: message })
+            })
+            .then(response => response.text())
+            .then(data => {
+                console.log("[✓] Risposta server:", data);
+                if (useAlert) { alert("Risposta server: " + data); } else { console.log("Risposta server: " + data); }
+            })
+            .catch(error => {
+                console.error("[!] Errore invio:", error);
+                if (useAlert) { alert("Errore durante l'invio."); } else { console.log("Errore durante l'invio."); }
+            });
+        }
+
+        function openTab(tabId) {
+            if (tabId === 'ai') {
+                if (useAlert) { alert("AI is not implemented yet."); } else { console.log("AI is not implemented yet."); }
+                return;
+            }
+            if (tabId === 'examples') {
+                populateExamples();
+            }
+            document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function openExamples() {
+            document.getElementById("exampleModal").style.display = "block";
+            const list = document.getElementById("exampleList");
+            list.innerHTML = "";
+            exampleFiles.forEach((item, index) => {
+                const div = document.createElement("div");
+                div.className = "example-item";
+                div.innerText = item[0];
+                div.onclick = () => {
+                    document.getElementById("exampleCodeView").value = item[1];
+                    selectedCode = item[1];
+                };
+                list.appendChild(div);
+            });
+        }
+
+        function closeExamples() {
+            document.getElementById("exampleModal").style.display = "none";
+        }
+
+        function loadExample() {
+            document.getElementById("codeInput").value = selectedCode;
+            openTab('code');
+            closeExamples();
+        }
+
+        function runExample() {
+            sendMessage('code', selectedCode);
+            closeExamples();
+        }
+
+        // Control Tab functionality with Mouse Lock
+        const captureArea = document.getElementById("captureArea");
+        const log = document.getElementById("log");
+        const focusState = document.getElementById("focusState");
+        const mouseState = document.getElementById("mouseState");
+        const mouseXDisplay = document.getElementById("mouseX");
+        const mouseYDisplay = document.getElementById("mouseY");
+
+        let capturing = false;
+        let mouseLocked = false;
+        let virtualMouseX = 0;
+        let virtualMouseY = 0;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        function updateMousePosition(x, y) {
+            virtualMouseX = x;
+            virtualMouseY = y;
+            mouseXDisplay.textContent = x;
+            mouseYDisplay.textContent = y;
+        }
+
+        function logMessage(msg) {
+            log.textContent += msg + "\n";
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function handleControlInput(input) {
+            sendMessage("control", input);
+        }
+        
+        function startCapture() {
+            if (!capturing) {
+                capturing = true;
+                focusState.textContent = "SI";
+                logMessage("[Modalità cattura abilitata]");
+            }
+        }
+
+        function stopCapture() {
+            if (capturing) {
+                capturing = false;
+                focusState.textContent = "NO";
+                logMessage("[Modalità cattura disabilitata]");
+                
+                // Reset virtual mouse position and last position, unlock mouse when stopping capture
+                updateMousePosition(0, 0);
+                lastMouseX = 0;
+                lastMouseY = 0;
+                if (mouseLocked) {
+                    unlockMouse();
+                }
+            }
+        }
+
+        function lockMouse() {
+            captureArea.requestPointerLock();
+        }
+
+        function unlockMouse() {
+            if (document.pointerLockElement) {
+                document.exitPointerLock();
+            }
+        }
+
+        // Pointer Lock event listeners
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement === captureArea) {
+                mouseLocked = true;
+                mouseState.textContent = "SI";
+                mouseState.classList.add("mouse-locked");
+                captureArea.classList.add("locked");
+                logMessage("[Mouse lock attivato - movimenti relativi]");
+            } else {
+                mouseLocked = false;
+                mouseState.textContent = "NO";
+                mouseState.classList.remove("mouse-locked");
+                captureArea.classList.remove("locked");
+                logMessage("[Mouse lock disattivato]");
+            }
+        });
+
+        document.addEventListener('pointerlockerror', () => {
+            logMessage("[Errore: impossibile attivare mouse lock]");
+        });
+
+        captureArea.addEventListener("click", () => {
+            captureArea.focus();
+            if (!capturing) {
+                startCapture();
+                // Initialize last mouse position when starting capture
+                const rect = captureArea.getBoundingClientRect();
+                lastMouseX = Math.round(rect.left + rect.width / 2);
+                lastMouseY = Math.round(rect.top + rect.height / 2);
+            } else if (!mouseLocked) {
+                lockMouse();
+            }
+        });
+
+        captureArea.addEventListener("keydown", (e) => {
+            if (!capturing) return;
+
+            if (e.key === "Escape") {
+                stopCapture();
+                return;
+            }
+
+            let modifiers = [];
+            if (e.ctrlKey) modifiers.push("Ctrl");
+            if (e.shiftKey) modifiers.push("Shift");
+            if (e.altKey) modifiers.push("Alt");
+            if (e.metaKey) modifiers.push("Meta");
+
+            let modString = modifiers.length ? "[" + modifiers.join("+") + "] " : "";
+
+            logMessage("Tasto premuto: " + modString + e.key + " (code: " + e.code + ")");
+            handleControlInput("key " + e.key + " " + ([e.ctrlKey, e.shiftKey, e.altKey, e.metaKey]).join(" "));
+        });
+
+        captureArea.addEventListener("mousemove", (e) => {
+            if (!capturing) return;
+            
+            if (mouseLocked) {
+                // Mouse locked - use relative movement and update virtual position
+                const deltaX = e.movementX;
+                const deltaY = e.movementY;
+                
+                if (deltaX !== 0 || deltaY !== 0) {
+                    // Update virtual mouse position
+                    const newX = virtualMouseX + deltaX;
+                    const newY = virtualMouseY + deltaY;
+                    updateMousePosition(newX, newY);
+                    
+                    logMessage("Mouse movimento relativo: ΔX=" + deltaX + ", ΔY=" + deltaY + " → Pos(" + newX + "," + newY + ")");
+                    handleControlInput("mouse_move " + deltaX + " " + deltaY);
+                }
+            } else {
+                // Mouse not locked - calculate relative movement from last position
+                const currentX = Math.round(e.clientX);
+                const currentY = Math.round(e.clientY);
+                
+                const deltaX = currentX - lastMouseX;
+                const deltaY = currentY - lastMouseY;
+                
+                // Update virtual position and last position
+                const newX = virtualMouseX + deltaX;
+                const newY = virtualMouseY + deltaY;
+                updateMousePosition(newX, newY);
+                
+                lastMouseX = currentX;
+                lastMouseY = currentY;
+                
+                if (deltaX !== 0 || deltaY !== 0) {
+                    logMessage("Mouse movimento relativo: ΔX=" + deltaX + ", ΔY=" + deltaY + " → Pos(" + newX + "," + newY + ")");
+                    handleControlInput("mouse_move " + deltaX + " " + deltaY);
+                }
+            }
+        });
+
+        captureArea.addEventListener("mousedown", (e) => {
+            if (!capturing) return;
+
+            let buttonName;
+            switch(e.button) {
+                case 0: buttonName = "l"; break; //left
+                case 1: buttonName = "m"; break; //middle
+                case 2: buttonName = "r"; break; //right
+                default: buttonName = "o"; break; //other
+            }
+
+            logMessage("Mouse button premuto: " + buttonName);
+            handleControlInput("mouse_button " + buttonName);
+        });
+
+        // Prevent context menu when right-clicking in capture area
+        captureArea.addEventListener("contextmenu", (e) => {
+            if (capturing) {
+                e.preventDefault();
+            }
+        });
+
+        populateExamples();
+    </script>
+</body>
+</html>
