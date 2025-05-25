@@ -208,7 +208,6 @@
 
         /* Live Tab Center Box */
         #liveBox {
-            border: 2px solid #0f0;
             padding: 20px;
             height: calc(100% - 40px);
             max-width: 500px;
@@ -219,8 +218,12 @@
         }
 
         #liveInput {
-            width: calc(100% - 24px);
-            margin-bottom: 10px;
+            width: 135%;
+            margin-left: -17.5%;
+            margin-right: -17.5%;
+            margin-bottom: 20px;
+            font-size: 1.25em;
+            padding: 15px;
         }
 
         .live-buttons {
@@ -238,7 +241,7 @@
         <div class="tab" onclick="openTab('examples')">Esempi</div>
         <div class="tab" onclick="openTab('live')">Live</div>
         <div class="tab" onclick="openTab('control')">Control</div>
-        <div class="tab" onclick="openTab('ai')">AI</div>
+        <div class="tab" style="display: none;" onclick="openTab('ai')">AI</div>
     </div>
 
     <div id="code" class="content active">
@@ -255,7 +258,7 @@
         <div id="liveBox">
             <input id="liveInput" type="text" placeholder="Enter command..."/>
             <div class="live-buttons">
-                <button onclick="sendMessage('live', document.getElementById('liveInput').value)">Esegui</button>
+                <button onclick="executeLiveCommand()">Esegui</button>
                 <button onclick="sendMessage('interrupt', '')">Stop</button>
             </div>
         </div>
@@ -299,12 +302,21 @@
         // Setup live input
         document.getElementById("liveInput").addEventListener("keyup", function(event) {
             if (event.keyCode === 13) {
-                sendMessage('live', document.getElementById('liveInput').value);
+                executeLiveCommand();
             }
             if (event.ctrlKey && event.key === 'p') {
-                sendMessage('live', document.getElementById('liveInput').value);
+                executeLiveCommand();
             }
         });
+
+        function executeLiveCommand() {
+            const input = document.getElementById('liveInput');
+            const command = input.value;
+            if (command.trim()) {
+                sendMessage('live', command);
+                input.value = ''; // Pulisce l'input dopo l'invio
+            }
+        }
 
         const exampleFiles = [
             ["GoToGoogleCom.py", "typeString(\"https://www.google.com\")\nkeyboard.press(Keycode.ENTER)\ndelay(1000)"],
@@ -407,10 +419,10 @@
         let lastMouseY = 0;
 
         function updateMousePosition(x, y) {
-            virtualMouseX = x;
-            virtualMouseY = y;
-            mouseXDisplay.textContent = x;
-            mouseYDisplay.textContent = y;
+            virtualMouseX = Math.round(x);
+            virtualMouseY = Math.round(y);
+            mouseXDisplay.textContent = virtualMouseX;
+            mouseYDisplay.textContent = virtualMouseY;
         }
 
         function logMessage(msg) {
@@ -427,6 +439,9 @@
                 capturing = true;
                 focusState.textContent = "SI";
                 logMessage("[Modalità cattura abilitata]");
+                
+                // Initialize virtual mouse position to center of screen
+                updateMousePosition(0, 0);
             }
         }
 
@@ -436,7 +451,7 @@
                 focusState.textContent = "NO";
                 logMessage("[Modalità cattura disabilitata]");
                 
-                // Reset virtual mouse position and last position, unlock mouse when stopping capture
+                // Reset all positions and unlock mouse when stopping capture
                 updateMousePosition(0, 0);
                 lastMouseX = 0;
                 lastMouseY = 0;
@@ -464,6 +479,9 @@
                 mouseState.classList.add("mouse-locked");
                 captureArea.classList.add("locked");
                 logMessage("[Mouse lock attivato - movimenti relativi]");
+                
+                // Reset virtual position when lock is activated
+                updateMousePosition(0, 0);
             } else {
                 mouseLocked = false;
                 mouseState.textContent = "NO";
@@ -477,14 +495,14 @@
             logMessage("[Errore: impossibile attivare mouse lock]");
         });
 
-        captureArea.addEventListener("click", () => {
+        captureArea.addEventListener("click", (e) => {
             captureArea.focus();
             if (!capturing) {
                 startCapture();
                 // Initialize last mouse position when starting capture
                 const rect = captureArea.getBoundingClientRect();
-                lastMouseX = Math.round(rect.left + rect.width / 2);
-                lastMouseY = Math.round(rect.top + rect.height / 2);
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
             } else if (!mouseLocked) {
                 lockMouse();
             }
@@ -513,40 +531,35 @@
         captureArea.addEventListener("mousemove", (e) => {
             if (!capturing) return;
             
+            let deltaX, deltaY;
+            
             if (mouseLocked) {
-                // Mouse locked - use relative movement and update virtual position
-                const deltaX = e.movementX;
-                const deltaY = e.movementY;
-                
-                if (deltaX !== 0 || deltaY !== 0) {
-                    // Update virtual mouse position
-                    const newX = virtualMouseX + deltaX;
-                    const newY = virtualMouseY + deltaY;
-                    updateMousePosition(newX, newY);
-                    
-                    logMessage("Mouse movimento relativo: ΔX=" + deltaX + ", ΔY=" + deltaY + " → Pos(" + newX + "," + newY + ")");
-                    handleControlInput("mouse_move " + deltaX + " " + deltaY);
-                }
+                // Mouse locked - use native movementX/Y (already relative)
+                deltaX = e.movementX;
+                deltaY = e.movementY;
             } else {
                 // Mouse not locked - calculate relative movement from last position
-                const currentX = Math.round(e.clientX);
-                const currentY = Math.round(e.clientY);
+                deltaX = e.clientX - lastMouseX;
+                deltaY = e.clientY - lastMouseY;
                 
-                const deltaX = currentX - lastMouseX;
-                const deltaY = currentY - lastMouseY;
-                
-                // Update virtual position and last position
+                // Update last position for next calculation
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+            
+            // Only process if there's actual movement
+            if (deltaX !== 0 || deltaY !== 0) {
+                // Update virtual mouse position
                 const newX = virtualMouseX + deltaX;
                 const newY = virtualMouseY + deltaY;
                 updateMousePosition(newX, newY);
                 
-                lastMouseX = currentX;
-                lastMouseY = currentY;
+                // Round delta values to avoid decimal precision issues
+                const roundedDeltaX = Math.round(deltaX);
+                const roundedDeltaY = Math.round(deltaY);
                 
-                if (deltaX !== 0 || deltaY !== 0) {
-                    logMessage("Mouse movimento relativo: ΔX=" + deltaX + ", ΔY=" + deltaY + " → Pos(" + newX + "," + newY + ")");
-                    handleControlInput("mouse_move " + deltaX + " " + deltaY);
-                }
+                logMessage("Mouse movimento: ΔX=" + roundedDeltaX + ", ΔY=" + roundedDeltaY + " → Pos(" + virtualMouseX + "," + virtualMouseY + ")");
+                handleControlInput("mouse_move " + roundedDeltaX + " " + roundedDeltaY);
             }
         });
 
@@ -569,6 +582,14 @@
         captureArea.addEventListener("contextmenu", (e) => {
             if (capturing) {
                 e.preventDefault();
+            }
+        });
+
+        // Initialize mouse position tracking on page load
+        captureArea.addEventListener("mouseenter", (e) => {
+            if (!capturing) {
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
             }
         });
 

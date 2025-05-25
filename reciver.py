@@ -66,18 +66,9 @@ def playControlKey(data):
             # Build list of keys to press
             keys_to_press = []
             
-            # Add modifiers first
-            if ctrl_pressed:
-                keys_to_press.append(Keycode.CONTROL)
-            if shift_pressed:
-                keys_to_press.append(Keycode.SHIFT)
-            if alt_pressed:
-                keys_to_press.append(Keycode.ALT)
-            if meta_pressed:
-                keys_to_press.append(Keycode.GUI)  # Windows/Cmd key
-            
             # Map special key names to Keycode
             key_mapping = {
+                # Special keys
                 'Enter': Keycode.ENTER,
                 'Return': Keycode.ENTER,
                 'Backspace': Keycode.BACKSPACE,
@@ -85,6 +76,12 @@ def playControlKey(data):
                 'Tab': Keycode.TAB,
                 'Escape': Keycode.ESCAPE,
                 'Space': Keycode.SPACE,
+                '': Keycode.SPACE,
+                ' ': Keycode.SPACE,
+                'Shift': Keycode.SHIFT,
+                'Alt': Keycode.ALT,
+                'Ctrl': Keycode.CONTROL,
+                'Meta': Keycode.GUI,  # Windows / Command
                 'ArrowUp': Keycode.UP_ARROW,
                 'ArrowDown': Keycode.DOWN_ARROW,
                 'ArrowLeft': Keycode.LEFT_ARROW,
@@ -99,17 +96,204 @@ def playControlKey(data):
                 'ScrollLock': Keycode.SCROLL_LOCK,
                 'PrintScreen': Keycode.PRINT_SCREEN,
                 'Pause': Keycode.PAUSE,
+
+                # Function keys
                 'F1': Keycode.F1, 'F2': Keycode.F2, 'F3': Keycode.F3, 'F4': Keycode.F4,
                 'F5': Keycode.F5, 'F6': Keycode.F6, 'F7': Keycode.F7, 'F8': Keycode.F8,
                 'F9': Keycode.F9, 'F10': Keycode.F10, 'F11': Keycode.F11, 'F12': Keycode.F12,
+
+                # Digits
+                '0': Keycode.ZERO,
+                '1': Keycode.ONE,
+                '2': Keycode.TWO,
+                '3': Keycode.THREE,
+                '4': Keycode.FOUR,
+                '5': Keycode.FIVE,
+                '6': Keycode.SIX,
+                '7': Keycode.SEVEN,
+                '8': Keycode.EIGHT,
+                '9': Keycode.NINE,
+
+                # Symbols (require Shift for actual character)
+                '!': Keycode.ONE,
+                '@': Keycode.TWO,
+                '#': Keycode.THREE,
+                '$': Keycode.FOUR,
+                '%': Keycode.FIVE,
+                '^': Keycode.SIX,
+                '&': Keycode.SEVEN,
+                '*': Keycode.EIGHT,
+                '(': Keycode.NINE,
+                ')': Keycode.ZERO,
+                '-': Keycode.MINUS,
+                '_': Keycode.MINUS,
+                '=': Keycode.EQUALS,
+                '+': Keycode.EQUALS,
+                '[': Keycode.LEFT_BRACKET,
+                '{': Keycode.LEFT_BRACKET,
+                ']': Keycode.RIGHT_BRACKET,
+                '}': Keycode.RIGHT_BRACKET,
+                '\\': Keycode.BACKSLASH,
+                '|': Keycode.BACKSLASH,
+                ';': Keycode.SEMICOLON,
+                ':': Keycode.SEMICOLON,
+                "'": Keycode.QUOTE,
+                '"': Keycode.QUOTE,
+                ',': Keycode.COMMA,
+                '<': Keycode.COMMA,
+                '.': Keycode.PERIOD,
+                '>': Keycode.PERIOD,
+                '/': Keycode.FORWARD_SLASH,
+                '?': Keycode.FORWARD_SLASH,
+                '`': Keycode.GRAVE_ACCENT,
+                '~': Keycode.GRAVE_ACCENT,
             }
             
+            key_special_mapping = {
+                '!': Keycode.ONE,
+                '@': Keycode.TWO,
+                '#': Keycode.THREE,
+                '$': Keycode.FOUR,
+                '%': Keycode.FIVE,
+                '^': Keycode.SIX,
+                '&': Keycode.SEVEN,
+                '*': Keycode.EIGHT,
+                '(': Keycode.NINE,
+                ')': Keycode.ZERO,
+                '-': Keycode.MINUS,
+                '_': Keycode.MINUS,
+                '=': Keycode.EQUALS,
+                '+': Keycode.EQUALS,
+                '[': Keycode.LEFT_BRACKET,
+                '{': Keycode.LEFT_BRACKET,
+                ']': Keycode.RIGHT_BRACKET,
+                '}': Keycode.RIGHT_BRACKET,
+                '\\': Keycode.BACKSLASH,
+                '|': Keycode.BACKSLASH,
+                ';': Keycode.SEMICOLON,
+                ':': Keycode.SEMICOLON,
+                "'": Keycode.QUOTE,
+                '"': Keycode.QUOTE,
+                ',': Keycode.COMMA,
+                '<': Keycode.COMMA,
+                '.': Keycode.PERIOD,
+                '>': Keycode.PERIOD,
+                '/': Keycode.FORWARD_SLASH,
+                '?': Keycode.FORWARD_SLASH,
+                '`': Keycode.GRAVE_ACCENT,
+                '~': Keycode.GRAVE_ACCENT,
+            }
+            
+            key_mapping_it = {
+                # Numeri
+                '1': Keycode.ONE,
+                '2': Keycode.TWO,
+                '3': Keycode.THREE,
+                '4': Keycode.FOUR,
+                '5': Keycode.FIVE,
+                '6': Keycode.SIX,
+                '7': Keycode.SEVEN,
+                '8': Keycode.EIGHT,
+                '9': Keycode.NINE,
+                '0': Keycode.ZERO,
+
+                # Simboli con SHIFT
+                '!': [Keycode.SHIFT, Keycode.ONE],
+                '"': [Keycode.SHIFT, Keycode.TWO],
+                '£': [Keycode.SHIFT, Keycode.THREE],
+                '$': [Keycode.SHIFT, Keycode.FOUR],
+                '%': [Keycode.SHIFT, Keycode.FIVE],
+                '&': [Keycode.SHIFT, Keycode.SIX],
+                '/': [Keycode.SHIFT, Keycode.SEVEN],
+                '(': [Keycode.SHIFT, Keycode.EIGHT],
+                ')': [Keycode.SHIFT, Keycode.NINE],
+                '=': [Keycode.SHIFT, Keycode.ZERO],
+
+                # Simboli con AltGr (RIGHT_ALT) - mappati ai tasti fisici US
+                '@': [Keycode.RIGHT_ALT, Keycode.SEMICOLON],      # ';' sulla tastiera US
+                '#': [Keycode.RIGHT_ALT, Keycode.QUOTE],          # ''' sulla tastiera US
+                '[': [Keycode.RIGHT_ALT, Keycode.LEFT_BRACKET],   # '[' sulla tastiera US
+                ']': [Keycode.RIGHT_ALT, Keycode.RIGHT_BRACKET],  # ']' sulla tastiera US
+                '{': [Keycode.RIGHT_ALT, Keycode.NINE],           # '(' sulla tastiera US
+                '}': [Keycode.RIGHT_ALT, Keycode.ZERO],           # ')' sulla tastiera US
+                '\\': [Keycode.RIGHT_ALT, Keycode.BACKSLASH],     # '\' sulla tastiera US
+                '|': [Keycode.RIGHT_ALT, Keycode.BACKSLASH],      # '\' sulla tastiera US
+
+                # Altri simboli
+                '+': Keycode.EQUALS,
+                '*': [Keycode.SHIFT, Keycode.EIGHT],
+                '-': Keycode.MINUS,
+                '_': [Keycode.SHIFT, Keycode.MINUS],
+                ':': [Keycode.SHIFT, Keycode.SEMICOLON],
+                ';': Keycode.SEMICOLON,
+                '<': [Keycode.SHIFT, Keycode.COMMA],
+                ',': Keycode.COMMA,
+                '>': [Keycode.SHIFT, Keycode.PERIOD],
+                '.': Keycode.PERIOD,
+                '?': [Keycode.SHIFT, Keycode.FORWARD_SLASH],
+                '\'': Keycode.QUOTE,
+                '"': [Keycode.SHIFT, Keycode.QUOTE],
+                '`': Keycode.GRAVE_ACCENT,
+                '~': [Keycode.SHIFT, Keycode.GRAVE_ACCENT],
+            }
+
+            
+            """
+            if (key_name not in key_mapping_it):
+                # Add modifiers first
+                if ctrl_pressed:
+                    keys_to_press.append(Keycode.CONTROL)
+                if shift_pressed:
+                    keys_to_press.append(Keycode.SHIFT)
+                if alt_pressed:
+                    keys_to_press.append(Keycode.ALT)
+                if meta_pressed:
+                    keys_to_press.append(Keycode.GUI)  # Windows/Cmd key
+                    
+                if len(key_name) == 1:
+                    # Single character - convert to uppercase for Keycode attribute
+                    key_attr = key_name.upper()
+                    if hasattr(Keycode, key_attr):
+                        main_key = getattr(Keycode, key_attr)
+                    else:
+                        print(f"Key '{key_name}' not found in Keycode")
+                        return
+                else:
+                    key_attr = key_name.upper()
+                    if hasattr(Keycode, key_attr):
+                        main_key = getattr(Keycode, key_attr)
+                    else:
+                        print(f"Key '{key_name}' not recognized")
+                        return
+                    
+                keys_to_press.append(main_key)
+                
+            else: #key in keymapping
+                main_key = key_mapping[key_name]
+                if isinstance(main_key, list):
+                    keys_to_press.extend(main_key)
+                else:
+                    keys_to_press.append(main_key)
+            """
+            
+            
+            # Add modifiers first
+            if ctrl_pressed:
+                keys_to_press.append(Keycode.CONTROL)
+            if shift_pressed:
+                keys_to_press.append(Keycode.SHIFT)
+            if alt_pressed:
+                keys_to_press.append(Keycode.ALT)
+            if meta_pressed:
+                keys_to_press.append(Keycode.GUI)  # Windows/Cmd key
+                
             # Get the main key
             if key_name in key_mapping:
                 main_key = key_mapping[key_name]
             elif len(key_name) == 1:
                 # Single character - convert to uppercase for Keycode attribute
                 key_attr = key_name.upper()
+                print(f"Key attr '{key_name}' upper {key_attr}")
                 if hasattr(Keycode, key_attr):
                     main_key = getattr(Keycode, key_attr)
                 else:
@@ -126,6 +310,7 @@ def playControlKey(data):
             
             # Add main key to the list
             keys_to_press.append(main_key)
+            
             
             # Press all keys
             if keys_to_press:
